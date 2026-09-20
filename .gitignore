@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Generated artifacts (regenerate with `make data && make train`)
+data/
+artifacts/
+*.db
+*.sqlite3
+
+# Node
+node_modules/
+web/dist/
+web/.vite/
+
+# Env
+.env
+.env.local
