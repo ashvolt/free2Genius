@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from f2g import config
-from f2g.agent import prompts
+from f2g.agent import prompts, scope
 from f2g.agent.guardrails import GuardrailReport, run_input_guardrails, run_output_guardrails
 from f2g.agent.tools import TOOL_SCHEMAS, ConciergeTools
 from f2g.llm import observations
@@ -86,6 +86,8 @@ class AgentResult:
     # Tools the agent had to call itself because the model did not. A rising
     # rate here is the signal that the model is under-investigating.
     forced_evidence: list[str] = field(default_factory=list)
+    refused: bool = False
+    refusal_kind: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         d = {
@@ -101,6 +103,8 @@ class AgentResult:
             "prompt_version": self.prompt_version,
             "rounds_used": self.rounds_used,
             "forced_evidence": self.forced_evidence,
+            "refused": self.refused,
+            "refusal_kind": self.refusal_kind,
         }
         return d
 
@@ -128,8 +132,33 @@ class ConciergeAgent:
         return self._run(prompts.NUDGE_TASK, user_visible_input="")
 
     def chat(self, user_message: str, history: list[dict[str, str]] | None = None) -> AgentResult:
+        # Scope is decided before any inference. A refusal that depends on the
+        # model cooperating is not a control, and it costs nothing to be certain
+        # here rather than hopeful later.
+        verdict = scope.classify(user_message)
+        if not verdict.in_scope:
+            return self._refusal(user_message, verdict)
         task = f"{prompts.CHAT_PREAMBLE}\n\nUser question: {user_message}"
         return self._run(task, user_visible_input=user_message, history=history)
+
+    def _refusal(self, user_message: str, verdict: scope.ScopeVerdict) -> AgentResult:
+        """A decline, produced without calling a model or touching account data."""
+        input_report = run_input_guardrails(user_message)
+        report = run_output_guardrails(
+            verdict.response, self.tools.value_ledger, require_disclosure=False
+        )
+        return AgentResult(
+            user_id=self.user_id,
+            message=verdict.response,
+            guardrails=report.to_dict(),
+            input_guardrails=input_report.to_dict(),
+            telemetry={"provider": "scope_policy", "model": "n/a", "latency_s": 0.0,
+                       "prompt_tokens": 0, "completion_tokens": 0, "repair_attempts": 0,
+                       "schema_failures": 0},
+            rounds_used=0,
+            refused=True,
+            refusal_kind=verdict.kind,
+        )
 
     # -- the loop ---------------------------------------------------------
 
