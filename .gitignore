@@ -13,6 +13,10 @@ artifacts/
 *.db
 *.sqlite3
 
+# Open-weights model files (~2.9GB). Fetch with `make models`.
+models/
+*.gguf
+
 # Node
 node_modules/
 web/dist/
