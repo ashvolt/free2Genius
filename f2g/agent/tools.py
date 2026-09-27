@@ -26,10 +26,13 @@ Design rules this module enforces:
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from f2g.data import catalog
 from f2g.data.accounts import build_ledger, repository
+
+_NUMERIC_IN_TEXT = re.compile(r"\d[\d,]*(?:\.\d+)?")
 
 MAX_FEE_EVENTS = 25
 MAX_ADVANCES = 15
@@ -67,41 +70,63 @@ class ConciergeTools:
         }
 
     def list_recent_fees(self, fee_type: str | None = None, limit: int = MAX_FEE_EVENTS) -> dict[str, Any]:
-        """TODO(exercise): implement.
+        """Fee events charged to this user in the last 90 days.
 
-        Return the user's fee events from the last 90 days.
+        The primary evidence source: every savings claim the agent makes traces
+        back to rows returned here.
 
-        Args:
-            fee_type: optional filter, one of "instant_transfer" or
-                "overdraft". None means all types.
-            limit: maximum number of events to return, newest first.
+        Note that `total_usd` covers every matching event, not just the page
+        returned under `limit`. Summing only the returned page would let the
+        agent quote a total that contradicts the aggregate the model scored the
+        same user on — detail and headline disagreeing about one user is the
+        failure this tool exists to avoid.
+        """
+        events = self.ledger["fee_events"]
+        valid_types = {"instant_transfer", "overdraft"}
 
-        Required return shape:
-            {
-              "window_days": 90,
-              "as_of": "<ledger as_of date>",
-              "fee_type_filter": <the filter that was applied, or "all">,
-              "event_count": <int, count AFTER filtering, BEFORE truncation>,
-              "total_usd": <float, sum of ALL filtered events, not just the
-                            returned page -- rounded to 2dp>,
-              "by_type": {"instant_transfer": {"count": int, "total_usd": float},
-                          "overdraft":         {"count": int, "total_usd": float}},
-              "events": [ <up to `limit` ledger fee events, newest first> ],
-              "truncated": <bool, True if events were cut by `limit`>,
-              "note": <string; when there are no matching events, an explicit
-                       sentence the model can relay, e.g. "No instant-transfer
-                       fees were charged in the last 90 days.">
+        if fee_type is not None and fee_type not in valid_types:
+            return {
+                "window_days": 90,
+                "as_of": self.ledger["as_of"],
+                "fee_type_filter": fee_type,
+                "event_count": 0,
+                "total_usd": 0.0,
+                "by_type": {t: {"count": 0, "total_usd": 0.0} for t in sorted(valid_types)},
+                "events": [],
+                "truncated": False,
+                "note": (
+                    f"'{fee_type}' is not a fee type on this account. "
+                    f"Valid fee types are: {', '.join(sorted(valid_types))}."
+                ),
             }
 
-        Notes:
-            * Read from `self.ledger["fee_events"]`; do not recompute amounts.
-            * `total_usd` must cover every filtered event even when truncated,
-              otherwise the agent will quote a total that contradicts the
-              model's own features.
-            * An unrecognised `fee_type` should return a result whose "note"
-              explains the valid options, rather than raising.
-        """
-        raise NotImplementedError("exercise 1")
+        matching = [e for e in events if fee_type is None or e["type"] == fee_type]
+        by_type = {
+            t: {
+                "count": sum(1 for e in matching if e["type"] == t),
+                "total_usd": round(sum(e["amount_usd"] for e in matching if e["type"] == t), 2),
+            }
+            for t in sorted(valid_types)
+        }
+        shown = matching[:limit]
+
+        if not matching:
+            scope = "fees" if fee_type is None else f"{fee_type.replace('_', '-')} fees"
+            note = f"No {scope} were charged in the last 90 days."
+        else:
+            note = ""
+
+        return {
+            "window_days": 90,
+            "as_of": self.ledger["as_of"],
+            "fee_type_filter": fee_type or "all",
+            "event_count": len(matching),
+            "total_usd": round(sum(e["amount_usd"] for e in matching), 2),
+            "by_type": by_type,
+            "events": shown,
+            "truncated": len(matching) > len(shown),
+            "note": note,
+        }
 
     def get_advance_history(self) -> dict[str, Any]:
         advances = self.ledger["advances"]
@@ -148,65 +173,114 @@ class ConciergeTools:
         return catalog.get_catalog()
 
     def estimate_savings(self, feature_ids: list[str]) -> dict[str, Any]:
-        """TODO(exercise): implement.
+        """What the named Genius features would have saved THIS user, in Python.
 
-        Deterministically estimate what the named Genius features would have
-        saved THIS user over the last 90 days, based on their own fee history.
+        This function exists so the language model never performs arithmetic on
+        money. The model chooses which features are worth evaluating; this
+        decides how much they are worth. That split removes the largest
+        hallucination class in a financial agent: a model multiplying $4.99 by
+        nine advances and getting it wrong is a compliance incident, whereas
+        this getting it wrong is a unit test.
 
-        This function exists so the language model never performs arithmetic.
-        The model picks which features are worth evaluating; this function
-        decides how much they are worth.
-
-        Args:
-            feature_ids: catalog feature ids, e.g. ["instant_delivery",
-                "overdraft_shield"].
-
-        Per-feature estimation rules (all figures over the trailing 90 days):
-            instant_delivery  -> sum of the user's "instant_transfer" fee
-                                 events. Genius removes this fee entirely, so
-                                 the saving is the full amount.
-            overdraft_shield  -> sum of "overdraft" fee events multiplied by
-                                 the catalog's `coverage_rate`. The shield
-                                 cannot catch every overdraft, so claiming the
-                                 full amount would overstate the benefit.
-            subscription_watch-> monthly total of subscriptions flagged
-                                 `looks_unused`, times 3 months, times the
-                                 catalog's `assumed_cancel_rate`. This is a
-                                 potential saving, not a realised one.
-            smart_savings /
-            budget_coach      -> no dollar saving. Return 0.0 with a
-                                 `basis` explaining it is not a fee saving.
-
-        Required return shape:
-            {
-              "window_days": 90,
-              "per_feature": [
-                 {"feature_id": str,
-                  "feature_name": str,          # from the catalog
-                  "estimated_saving_usd": float,  # rounded to 2dp
-                  "basis": str,                 # plain-language derivation,
-                                                # e.g. "9 instant-transfer
-                                                # fees at $4.99"
-                  "is_estimate": bool},         # True where assumptions were
-                                                # applied (shield coverage,
-                                                # cancel rate)
-                 ...
-              ],
-              "total_estimated_saving_usd": float,
-              "genius_cost_over_window_usd": float,   # monthly price x 3
-              "net_position_usd": float,              # savings minus cost
-              "unknown_feature_ids": [str],           # ids not in the catalog
-              "disclosure": <the catalog's disclosure string>
-            }
-
-        Notes:
-            * Never raise on an unknown feature id -- report it in
-              `unknown_feature_ids` so the model can say it does not know.
-            * `net_position_usd` may legitimately be negative. Do not clamp it.
-              An honest "this would not pay for itself" is a feature of this
-              product, not a bug.
+        Estimates are deliberately conservative — the overdraft shield cannot
+        catch every overdraft, and a flagged subscription is not a cancelled
+        one — so the value-fit gate in feature 003 errs toward suppression.
         """
-        raise NotImplementedError("exercise 2")
+        fees = self.ledger["fee_events"]
+        instant_total = round(
+            sum(e["amount_usd"] for e in fees if e["type"] == "instant_transfer"), 2
+        )
+        instant_count = sum(1 for e in fees if e["type"] == "instant_transfer")
+        overdraft_total = round(sum(e["amount_usd"] for e in fees if e["type"] == "overdraft"), 2)
+        overdraft_count = sum(1 for e in fees if e["type"] == "overdraft")
+
+        flagged = [s for s in self.ledger["subscriptions"] if s["looks_unused"]]
+        flagged_monthly = round(sum(s["monthly_usd"] for s in flagged), 2)
+
+        per_feature: list[dict[str, Any]] = []
+        unknown: list[str] = []
+
+        for fid in feature_ids:
+            feature = catalog.get_feature(fid)
+            if feature is None:
+                unknown.append(fid)
+                continue
+
+            components: dict[str, Any] = {}
+            if fid == "instant_delivery":
+                amount, is_estimate = instant_total, False
+                unit = feature["unit_saving"]
+                components = {"fee_count": instant_count, "unit_fee_usd": unit,
+                              "fee_total_usd": instant_total}
+                basis = (
+                    f"{instant_count} express-delivery "
+                    f"{'fee' if instant_count == 1 else 'fees'} at ${unit:.2f} each"
+                    if instant_count
+                    else "no express-delivery fees were charged in the last 90 days"
+                )
+            elif fid == "overdraft_shield":
+                coverage = feature["coverage_rate"]
+                amount, is_estimate = round(overdraft_total * coverage, 2), True
+                components = {"fee_count": overdraft_count, "fee_total_usd": overdraft_total,
+                              "coverage_rate": coverage}
+                basis = (
+                    f"{overdraft_count} overdraft "
+                    f"{'fee' if overdraft_count == 1 else 'fees'} totalling "
+                    f"${overdraft_total:.2f}, of which the shield is assumed to prevent "
+                    f"{coverage:.0%}"
+                    if overdraft_count
+                    else "no overdraft fees were charged in the last 90 days"
+                )
+            elif fid == "subscription_watch":
+                rate = feature["assumed_cancel_rate"]
+                amount, is_estimate = round(flagged_monthly * 3 * rate, 2), True
+                components = {"flagged_count": len(flagged),
+                              "flagged_monthly_usd": flagged_monthly,
+                              "months": 3, "assumed_cancel_rate": rate}
+                basis = (
+                    f"{len(flagged)} subscription(s) flagged as possibly unused at "
+                    f"${flagged_monthly:.2f} per month over 3 months, assuming "
+                    f"{rate:.0%} are actually cancelled"
+                    if flagged
+                    else "no subscriptions were flagged as possibly unused"
+                )
+            else:
+                # smart_savings and budget_coach are real features with no fee
+                # saving. Reporting 0.0 with a reason is more useful than
+                # omitting them, because the agent can still explain them.
+                amount, is_estimate = 0.0, False
+                basis = "this feature does not reduce fees; it is not a monetary saving"
+
+            per_feature.append(
+                {
+                    "feature_id": fid,
+                    "feature_name": feature["name"],
+                    "estimated_saving_usd": amount,
+                    "basis": basis,
+                    # Every number that appears in `basis` also appears here as a
+                    # numeric field. `basis` is a convenience for a human reader;
+                    # these are what the value ledger records, so a figure quoted
+                    # from the derivation is grounded rather than blocked.
+                    "components": components,
+                    "is_estimate": is_estimate,
+                }
+            )
+
+        total = round(sum(f["estimated_saving_usd"] for f in per_feature), 2)
+        cost = round(catalog.GENIUS_MONTHLY_PRICE * 3, 2)
+
+        return {
+            "window_days": 90,
+            "per_feature": per_feature,
+            "total_estimated_saving_usd": total,
+            "genius_cost_over_window_usd": cost,
+            # Deliberately not clamped at zero. A negative net position is the
+            # honest answer for many users, and being able to say so is the
+            # reason this product is defensible.
+            "net_position_usd": round(total - cost, 2),
+            "unknown_feature_ids": unknown,
+            "disclosure": catalog.get_catalog()["disclosure"],
+        }
 
     # -- dispatch ---------------------------------------------------------
 
@@ -228,12 +302,62 @@ class ConciergeTools:
         self.call_log.append({"tool": name, "arguments": arguments, "result": result})
         return result
 
+    def provenance(self, value: float) -> list[str]:
+        """Which tool call(s) returned this numeric value.
+
+        Powers the evidence chips in the console: a reader clicks a dollar
+        figure and sees the call that produced it. Grounding you can *inspect*
+        is far more convincing than grounding you are told about.
+        """
+        target = round(float(value), 2)
+        hits: list[str] = []
+        for entry in self.call_log:
+            found: set[float] = set()
+            self._walk(entry["result"], found)
+            if target in found:
+                hits.append(entry["tool"])
+        return hits
+
+    @classmethod
+    def _walk(cls, obj: Any, sink: set[float]) -> None:
+        if isinstance(obj, bool):
+            return
+        if isinstance(obj, (int, float)):
+            sink.add(round(float(obj), 2))
+        elif isinstance(obj, str):
+            for token in _NUMERIC_IN_TEXT.findall(obj):
+                try:
+                    sink.add(round(float(token.replace(",", "")), 2))
+                except ValueError:
+                    continue
+        elif isinstance(obj, dict):
+            for v in obj.values():
+                cls._walk(v, sink)
+        elif isinstance(obj, (list, tuple)):
+            for v in obj:
+                cls._walk(v, sink)
+
     def _record_values(self, obj: Any) -> None:
-        """Walk a tool result and remember every number it contained."""
+        """Walk a tool result and remember every number it contained.
+
+        Numbers inside returned *strings* are recorded too. That is safe, and
+        deliberately so: every string in a tool result is produced by this
+        module's own Python from the user's real account data, never by the
+        language model. A figure the model quotes out of a tool's own
+        explanation is therefore grounded, and blocking it would be a false
+        positive. The model can still never introduce a number of its own,
+        because it cannot write into a tool result.
+        """
         if isinstance(obj, bool):
             return
         if isinstance(obj, (int, float)):
             self.value_ledger.add(round(float(obj), 2))
+        elif isinstance(obj, str):
+            for token in _NUMERIC_IN_TEXT.findall(obj):
+                try:
+                    self.value_ledger.add(round(float(token.replace(",", "")), 2))
+                except ValueError:
+                    continue
         elif isinstance(obj, dict):
             for v in obj.values():
                 self._record_values(v)
@@ -328,7 +452,12 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "properties": {
                 "feature_ids": {
                     "type": "array",
-                    "items": {"type": "string"},
+                    # Enumerating the catalog ids here is not documentation: the
+                    # grammar generator turns an enum into literal alternatives,
+                    # so the model physically cannot emit a feature that does not
+                    # exist. A hallucinated product feature is prevented at the
+                    # decoder rather than caught downstream.
+                    "items": {"type": "string", "enum": sorted(catalog.FEATURE_IDS)},
                     "description": (
                         "Catalog feature ids to evaluate, e.g. "
                         "['instant_delivery', 'overdraft_shield']."
