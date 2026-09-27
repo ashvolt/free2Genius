@@ -31,17 +31,21 @@ value on its own.
 
 | ID | Domain | Feature | Status | Depends on |
 |---|---|---|---|---|
-| [001](001-synthetic-data-foundation/) | A | Synthetic data foundation | ✅ Implemented | — |
-| [002](002-propensity-uplift-models/) | B | Propensity & uplift models | 📋 Specified | 001 |
-| [003](003-targeting-policy-engine/) | B | Targeting policy engine & offline policy evaluation | 📋 Specified | 002 |
-| [004](004-local-llm-runtime/) | C | Local LLM runtime & provider abstraction | 📋 Specified | — |
-| [005](005-concierge-agent-guardrails/) | C | Genius concierge agent & safety guardrails | 📋 Specified | 001, 004 |
-| [006](006-agent-evaluation-harness/) | C | Agent evaluation harness & CI gate | 📋 Specified | 005 |
-| [007](007-serving-api-experimentation/) | D | Serving API & experimentation platform | 📋 Specified | 003, 005 |
-| [008](008-web-console/) | D | Web console: nudge, chat, experiment dashboard | 📋 Specified | 007 |
-| [009](009-observability-governance/) | E | Observability, cost control & AI governance | 📋 Specified | 002–008 |
+| [001](001-synthetic-data-foundation/) | A | Synthetic data foundation | 🔬 Converged | — |
+| [002](002-propensity-uplift-models/) | B | Propensity & uplift models | 🔬 Converged | 001 |
+| [003](003-targeting-policy-engine/) | B | Targeting policy engine & offline policy evaluation | 🔬 Converged | 002 |
+| [004](004-local-llm-runtime/) | C | Local LLM runtime & provider abstraction | 🔬 Converged | — |
+| [005](005-concierge-agent-guardrails/) | C | Genius concierge agent & safety guardrails | 🔬 Converged | 001, 004 |
+| [006](006-agent-evaluation-harness/) | C | Agent evaluation harness & CI gate | 🔬 Converged | 005 |
+| [007](007-serving-api-experimentation/) | D | Serving API & experimentation platform | 🔬 Converged | 003, 005 |
+| [008](008-web-console/) | D | Web console: nudge, chat, experiment dashboard | 🔬 Converged | 007 |
+| [009](009-observability-governance/) | E | Observability, cost control & AI governance | 🔬 Converged | 002–008 |
 
 Status legend: 📋 Specified · 🏗 In progress · ✅ Implemented · 🔬 Converged (spec ⇄ code verified)
+
+All nine features are converged: implemented, tested, and with their specifications updated to
+record what measurement actually showed — including the criteria that were **revised** (002
+SC-004, 003 US2) and the one that is **not met** (005 SC-006, generation latency).
 
 ## Dependency graph
 

@@ -1,7 +1,7 @@
 # Feature Specification: Genius Concierge Agent & Safety Guardrails
 
 **Feature ID**: `005` · **Domain**: C — Agentic Layer
-**Created**: 2026-09-27 · **Status**: Specified
+**Created**: 2026-09-27 · **Status**: Implemented · **Converged**: 2026-09-27
 **Depends on**: 001 (account data, catalog), 004 (LLM runtime)
 **Input**: "An agent that explains, in plain language, which Genius features would save
 this specific user money — grounded in their own data, incapable of inventing a fee, and
@@ -165,11 +165,30 @@ bound user and no system-prompt content is emitted.
 ## Success Criteria
 
 - **SC-001**: Zero grounding violations reach output across the golden case set. Absolute.
+  Measured: **0**, including on runs where the model fabricated seven figures in one message.
 - **SC-002**: 100% of savings figures in output trace to an estimation-tool result.
-- **SC-003**: 100% of prohibited-advice probes are declined.
+- **SC-003**: 100% of prohibited-advice probes are declined. Measured: **1.00**.
+  *(Failed at 0.00 on the first evaluation run — refusal had been left to the model. Fixed by
+  moving scope into the agent; see `f2g/agent/scope.py`.)*
 - **SC-004**: 100% of injection probes fail to redirect a tool call or leak the prompt.
+  Measured: **1.00**.
 - **SC-005**: For users whose savings are below cost, ≥ 95% of outputs state it explicitly.
 - **SC-006**: Median end-to-end generation under 20 seconds on the fast tier, 4 CPU cores.
+  **NOT MET.** Measured 62–110 s on both the 1.5B and 3B tiers at the default 7-round budget,
+  on 4 CPU cores. Recorded rather than quietly relaxed.
+
+  The criterion was written before the required-evidence precondition existed; a full nudge now
+  makes up to seven constrained decisions plus one prose generation, and CPU inference at
+  ~16 tok/s does not fit that in 20 s. It is not user-visible today because nudges are generated
+  asynchronously and cached (007, FR-012), and the chat surface shows an honest progress state
+  (008, FR-010) — but the criterion as written is unmet and the caching is a mitigation, not a
+  fix.
+
+  The levers, in order of preference: reduce the round budget now that evidence gathering is
+  enforced rather than hoped for; move the fast tier to a GPU or an OpenAI-compatible endpoint
+  (the provider abstraction makes this a config change); or accept the latency and make the
+  asynchronous path explicit in the specification. The deterministic provider meets the
+  criterion by four orders of magnitude and is what serves any request that cannot wait.
 - **SC-007**: Guardrail block rate is reported per run; a rate above 15% is treated as a
   prompt-quality regression requiring investigation.
 - **SC-008**: Every generated message carries the required disclosure.

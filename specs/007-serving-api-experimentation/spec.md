@@ -1,7 +1,7 @@
 # Feature Specification: Serving API & Experimentation Platform
 
 **Feature ID**: `007` · **Domain**: D — Product Surface
-**Created**: 2026-09-27 · **Status**: Specified
+**Created**: 2026-09-27 · **Status**: Implemented · **Converged**: 2026-09-27
 **Depends on**: 003 (policy), 005 (agent)
 **Input**: "Expose scoring and agent generation over HTTP, assign users to variants, capture
 the funnel, and analyse the result in a way that survives being looked at daily."
@@ -171,6 +171,7 @@ guardrail verdicts.
 - **SC-005**: Duplicate events never double-count.
 - **SC-006**: In a null simulation with 200 looks, sequential false-positive rate ≤ 0.07 at
   α = 0.05 while the naive repeated fixed-horizon test exceeds 0.20.
+  Measured: sequential **0.03**, naive **0.49**.
 - **SC-007**: Service starts in under 10 seconds with models and data present.
 - **SC-008**: Every endpoint is covered by an integration test.
 

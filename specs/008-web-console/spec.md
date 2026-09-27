@@ -1,7 +1,7 @@
 # Feature Specification: Web Console — Nudge, Chat & Experiment Dashboard
 
 **Feature ID**: `008` · **Domain**: D — Product Surface
-**Created**: 2026-09-27 · **Status**: Specified
+**Created**: 2026-09-27 · **Status**: Implemented · **Converged**: 2026-09-27
 **Depends on**: 007
 **Input**: "Make the whole system visible in a browser: what the model decided, what the
 agent said and why, and whether the experiment is working."
@@ -144,7 +144,7 @@ sequential bound over time, and the current verdict.
 - **SC-003**: All four views have explicit loading, empty and error states, verified by test.
 - **SC-004**: Dashboard communicates the stopping verdict without the reader consulting the
   documentation.
-- **SC-005**: Production bundle under 500 KB gzipped.
+- **SC-005**: Production bundle under 500 KB gzipped. Measured: **54.66 KB**.
 - **SC-006**: Charts legible at 375 px width and in both themes.
 - **SC-007**: A reviewer can follow the full story — targeting, message, evidence, experiment —
   in under ten minutes without a guide.

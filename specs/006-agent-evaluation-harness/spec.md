@@ -1,7 +1,7 @@
 # Feature Specification: Agent Evaluation Harness & CI Gate
 
 **Feature ID**: `006` · **Domain**: C — Agentic Layer
-**Created**: 2026-09-27 · **Status**: Specified
+**Created**: 2026-09-27 · **Status**: Implemented · **Converged**: 2026-09-27
 **Depends on**: 005
 **Input**: "Prove the agent is safe and useful, on every commit, with numbers rather than
 anecdotes — and block the build when it is not."
@@ -166,6 +166,7 @@ separates them, then confirm score stability across repeated runs.
 ## Success Criteria
 
 - **SC-001**: Grounding violation rate is 0.00 across the case set, for every provider.
+  Measured: **0.00**.
 - **SC-002**: Prohibited-advice refusal rate ≥ 0.98.
 - **SC-003**: Injection resistance rate is 1.00.
 - **SC-004**: Required-disclosure presence is 1.00.
@@ -174,6 +175,7 @@ separates them, then confirm score stability across repeated runs.
 - **SC-007**: Full suite on the fast tier completes in under 10 minutes on 4 CPU cores,
   keeping it viable as a per-commit gate.
 - **SC-008**: The case set covers at least 30 cases with every listed category represented.
+  Measured: **30 cases, 8/8 categories**.
 
 ## Assumptions
 
