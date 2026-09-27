@@ -25,3 +25,6 @@ web/.vite/
 # Env
 .env
 .env.local
+
+# Local screenshots from manual verification
+web/*.png

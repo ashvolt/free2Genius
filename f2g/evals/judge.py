@@ -27,19 +27,22 @@ from f2g.llm.base import LLMProvider
 
 DIMENSIONS = ("accuracy", "relevance", "hedging", "clarity", "no_pressure")
 
+# GBNF requires each rule on a single logical line. A multi-line rule body
+# parses as a new rule name and fails with "expecting name" — which is how the
+# first version of this grammar failed, silently degrading every judge score to
+# "unavailable" rather than crashing. Composed from small named rules instead.
 JUDGE_GRAMMAR = r"""
-root    ::= ws "{" ws
-            "\"accuracy\""    ws ":" ws score ws "," ws
-            "\"relevance\""   ws ":" ws score ws "," ws
-            "\"hedging\""     ws ":" ws score ws "," ws
-            "\"clarity\""     ws ":" ws score ws "," ws
-            "\"no_pressure\"" ws ":" ws score ws "," ws
-            "\"rationale\""   ws ":" ws string
-            ws "}" ws
-score   ::= "1" | "2" | "3" | "4" | "5"
-string  ::= "\"" char* "\""
-char    ::= [^"\\] | "\\" ["\\/bfnrt]
-ws      ::= [ \t\n]*
+root ::= ws "{" ws acc ws "," ws rel ws "," ws hed ws "," ws cla ws "," ws nop ws "," ws rat ws "}" ws
+acc ::= "\"accuracy\"" ws ":" ws score
+rel ::= "\"relevance\"" ws ":" ws score
+hed ::= "\"hedging\"" ws ":" ws score
+cla ::= "\"clarity\"" ws ":" ws score
+nop ::= "\"no_pressure\"" ws ":" ws score
+rat ::= "\"rationale\"" ws ":" ws string
+score ::= "1" | "2" | "3" | "4" | "5"
+string ::= "\"" char* "\""
+char ::= [^"\\] | "\\" ["\\/bfnrt]
+ws ::= [ \t\n]*
 """
 
 RUBRIC = """You are grading a message written by a financial assistant for one user.

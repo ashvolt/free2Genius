@@ -1,0 +1,311 @@
+/* Design tokens.
+ *
+ * The categorical series colours are the validated reference palette, run
+ * through the colour-vision validator in both modes on the all-pairs pairlist:
+ *   light  CVD dE 9.2  normal-vision dE 24.0  PASS
+ *   dark   CVD dE 9.4  normal-vision dE 20.9  PASS
+ * Aqua sits at 2.74:1 on the light surface, below the 3:1 bar, so every series
+ * that uses it carries a visible direct label — identity is never colour alone.
+ *
+ * Charts cap at three series: a fourth slot would put yellow beside orange,
+ * which fails the all-pairs floors.
+ *
+ * Dark values are declared twice on purpose — once for the OS setting and once
+ * for an explicit theme stamp — so a viewer's toggle wins either way.
+ */
+:root {
+  color-scheme: light;
+  --surface-0: #f6f6f4;
+  --surface-1: #fcfcfb;
+  --surface-2: #eef2f7;
+  --border: #e0dfda;
+  --border-strong: #c9c8c2;
+
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #85837c;
+
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+
+  --pos: #2a78d6;
+  --neg: #e34948;
+  --mid: #f0efec;
+  --reference: #a8a6a0;
+
+  --good: #1a7f37;
+  --warn: #9a6700;
+  --critical: #cf222e;
+  --good-bg: #dafbe1;
+  --warn-bg: #fff8c5;
+  --critical-bg: #ffebe9;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-0: #121211;
+    --surface-1: #1a1a19;
+    --surface-2: #232321;
+    --border: #33332f;
+    --border-strong: #4a4a45;
+
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8e8d84;
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+
+    --pos: #3987e5;
+    --neg: #e66767;
+    --mid: #383835;
+    --reference: #6b6a64;
+
+    --good: #3fb950;
+    --warn: #d29922;
+    --critical: #f85149;
+    --good-bg: #0f2913;
+    --warn-bg: #2b2510;
+    --critical-bg: #2d1113;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #121211;
+  --surface-1: #1a1a19;
+  --surface-2: #232321;
+  --border: #33332f;
+  --border-strong: #4a4a45;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #8e8d84;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --pos: #3987e5;
+  --neg: #e66767;
+  --mid: #383835;
+  --reference: #6b6a64;
+  --good: #3fb950;
+  --warn: #d29922;
+  --critical: #f85149;
+  --good-bg: #0f2913;
+  --warn-bg: #2b2510;
+  --critical-bg: #2d1113;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- shell --------------------------------------------------------- */
+
+.shell { max-width: 1280px; margin: 0 auto; padding: 0 16px 64px; }
+
+.masthead {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  padding: 24px 0 8px;
+}
+.masthead h1 { font-size: 19px; margin: 0; letter-spacing: -0.01em; }
+.masthead .sub { color: var(--text-secondary); font-size: 13px; }
+
+.synthetic-banner {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  font-size: 12.5px;
+  margin: 8px 0 16px;
+}
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
+.tab {
+  appearance: none; border: 0; background: none; cursor: pointer;
+  padding: 9px 14px; font-size: 13.5px; font-weight: 600;
+  color: var(--text-secondary); border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tab:hover { color: var(--text-primary); }
+.tab[aria-selected="true"] { color: var(--series-1); border-bottom-color: var(--series-1); }
+
+.theme-toggle {
+  margin-left: auto; appearance: none; cursor: pointer;
+  background: var(--surface-1); border: 1px solid var(--border);
+  color: var(--text-secondary); border-radius: var(--radius-sm);
+  padding: 5px 10px; font-size: 12px;
+}
+
+/* --- cards --------------------------------------------------------- */
+
+.card {
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow);
+}
+.card h2 { margin: 0 0 4px; font-size: 15px; letter-spacing: -0.01em; }
+.card .hint { color: var(--text-muted); font-size: 12.5px; margin: 0 0 14px; }
+
+.grid { display: grid; gap: 16px; }
+.grid.two { grid-template-columns: 1fr 1fr; }
+.grid.stats { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+@media (max-width: 900px) { .grid.two { grid-template-columns: 1fr; } }
+
+/* --- stat tiles ----------------------------------------------------- */
+
+.stat { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.stat .label { color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+.stat .value { font-size: 24px; font-weight: 650; letter-spacing: -0.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.stat .foot { color: var(--text-secondary); font-size: 12px; margin-top: 2px; }
+
+/* --- tables --------------------------------------------------------- */
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { color: var(--text-muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; background: var(--surface-2); position: sticky; top: 0; }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--text-primary); }
+tbody tr:hover { background: var(--surface-2); }
+tbody tr.selected { background: color-mix(in srgb, var(--series-1) 12%, transparent); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 12px; }
+td .uid { font-family: var(--mono); font-size: 12px; }
+
+/* --- badges --------------------------------------------------------- */
+
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  border-radius: 999px; padding: 2px 9px; font-size: 11.5px; font-weight: 600;
+  border: 1px solid transparent; white-space: nowrap;
+}
+.badge.ok { background: var(--good-bg); color: var(--good); border-color: color-mix(in srgb, var(--good) 28%, transparent); }
+.badge.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 28%, transparent); }
+.badge.bad { background: var(--critical-bg); color: var(--critical); border-color: color-mix(in srgb, var(--critical) 28%, transparent); }
+.badge.neutral { background: var(--surface-2); color: var(--text-secondary); border-color: var(--border); }
+.badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* --- evidence chips -------------------------------------------------- */
+
+.chip {
+  appearance: none; cursor: pointer; font: inherit; font-weight: 650;
+  background: color-mix(in srgb, var(--series-1) 14%, transparent);
+  color: var(--series-1);
+  border: 1px solid color-mix(in srgb, var(--series-1) 35%, transparent);
+  border-radius: var(--radius-sm); padding: 0 5px; margin: 0 1px;
+  font-variant-numeric: tabular-nums;
+}
+.chip:hover, .chip[aria-expanded="true"] { background: color-mix(in srgb, var(--series-1) 26%, transparent); }
+.chip.unbacked { background: var(--critical-bg); color: var(--critical); border-color: var(--critical); }
+
+.evidence-pop {
+  margin: 10px 0; padding: 12px 14px; border-radius: var(--radius-sm);
+  background: var(--surface-2); border: 1px solid var(--border);
+  font-size: 12.5px;
+  /* A figure can trace to three tools at once; without a cap the raw results
+     push the guardrail badges and the chat panel below the fold, which is
+     exactly the context a reader needs while inspecting provenance. */
+  max-height: 340px; overflow-y: auto;
+}
+.evidence-pop code { font-family: var(--mono); font-size: 11.5px; }
+
+.message {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-left: 3px solid var(--series-1);
+  border-radius: var(--radius-sm); padding: 14px 16px;
+  white-space: pre-wrap; line-height: 1.6; font-size: 13.5px;
+}
+.message strong { font-weight: 650; }
+.message em { color: var(--text-secondary); font-style: italic; font-size: 12.5px; }
+
+/* --- chat ------------------------------------------------------------ */
+
+.chat-log { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; padding-right: 4px; }
+.bubble { padding: 10px 13px; border-radius: var(--radius-sm); max-width: 86%; font-size: 13.5px; white-space: pre-wrap; }
+.bubble.user { align-self: flex-end; background: var(--series-1); color: #fff; }
+.bubble.agent { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--border); }
+.bubble.pending { color: var(--text-muted); font-style: italic; }
+.chat-form { display: flex; gap: 8px; margin-top: 12px; }
+.chat-form input {
+  flex: 1; padding: 9px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); font: inherit;
+}
+.chat-form input:focus { outline: 2px solid var(--series-1); outline-offset: -1px; }
+
+button.primary {
+  appearance: none; cursor: pointer; font: inherit; font-weight: 600;
+  background: var(--series-1); color: #fff; border: 0;
+  border-radius: var(--radius-sm); padding: 9px 16px;
+}
+button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+button.ghost {
+  appearance: none; cursor: pointer; font: inherit; font-size: 12.5px;
+  background: var(--surface-1); color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 11px;
+}
+button.ghost:hover { color: var(--text-primary); border-color: var(--border-strong); }
+
+/* --- states ---------------------------------------------------------- */
+
+.state { padding: 34px 20px; text-align: center; color: var(--text-secondary); }
+.state .title { font-weight: 650; color: var(--text-primary); margin-bottom: 4px; }
+.state.error { color: var(--critical); }
+.spinner {
+  width: 15px; height: 15px; border-radius: 50%; display: inline-block;
+  border: 2px solid color-mix(in srgb, var(--series-1) 30%, transparent);
+  border-top-color: var(--series-1); animation: spin 0.8s linear infinite;
+  vertical-align: -2px; margin-right: 7px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+
+/* --- charts ---------------------------------------------------------- */
+
+/* Charts are authored in a 560-unit viewBox. Letting that scale to a
+   1200px card multiplies every font size and stroke by ~2.2 and leaves the
+   plot swimming in whitespace, so the drawing width is capped near its
+   authored size and the block is centred in wider cards. */
+.chart { width: 100%; max-width: 620px; display: block; margin: 0 auto; overflow: visible; }
+.chart text { font-family: inherit; }
+.axis-label { fill: var(--text-muted); font-size: 10.5px; }
+.axis-title { fill: var(--text-secondary); font-size: 11px; font-weight: 600; }
+.grid-line { stroke: var(--border); stroke-width: 1; }
+.zero-line { stroke: var(--text-muted); stroke-width: 1.2; }
+.ref-line { stroke: var(--reference); stroke-width: 1.4; stroke-dasharray: 4 3; }
+.series-label { font-size: 11.5px; font-weight: 650; }
+.value-label { fill: var(--text-secondary); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+.legend .item { display: inline-flex; align-items: center; gap: 6px; }
+.legend .swatch { width: 11px; height: 11px; border-radius: 3px; }
+
+.note { color: var(--text-muted); font-size: 11.5px; margin-top: 10px; line-height: 1.5; }
+.mono { font-family: var(--mono); font-size: 12px; }
+
+.verdict {
+  border-radius: var(--radius); padding: 16px 18px; border: 1px solid;
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.verdict .v-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.verdict .v-rule { font-weight: 650; margin-top: 2px; }
+.verdict .v-detail { font-size: 12.5px; margin-top: 4px; opacity: 0.9; }
+.verdict.continue { background: var(--surface-2); border-color: var(--border); color: var(--text-primary); }
+.verdict.ship { background: var(--good-bg); border-color: var(--good); color: var(--good); }
+.verdict.stop_for_harm { background: var(--critical-bg); border-color: var(--critical); color: var(--critical); }
+.verdict.stop_for_futility { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
