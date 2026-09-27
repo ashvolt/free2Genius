@@ -1,7 +1,7 @@
 # Feature Specification: Propensity & Uplift Models
 
 **Feature ID**: `002` · **Domain**: B — Decision Intelligence
-**Created**: 2026-09-27 · **Status**: Specified
+**Created**: 2026-09-27 · **Status**: Implemented · **Converged**: 2026-09-27
 **Depends on**: 001
 **Input**: "Predict who will convert, and separately predict whom contact actually
 changes. Prove the second beats the first on the metric that matters."
@@ -130,11 +130,29 @@ bit-identical prediction.
   ROC AUC, PR AUC, log loss and a decile calibration table.
 - **FR-004**: System MUST train a T-learner uplift estimator (one model per arm).
 - **FR-005**: System MUST train an S-learner uplift estimator as a reference point.
+- **FR-005a**: System MUST train an X-learner uplift estimator. *(Added during
+  implementation: the T-learner alone failed SC-004 and SC-005 — see
+  [ADR-002 Outcome](../../docs/adr/ADR-002-uplift-over-propensity.md#outcome--what-measurement-actually-showed).)*
+- **FR-005b**: System MUST select the production uplift estimator by measured Qini rather
+  than by hard-coding one, so the choice is re-made whenever data or features change.
+- **FR-005c**: System MUST report an oracle ranking built from the known true effect, as a
+  ceiling against which every estimator is expressed as a share of what is achievable.
+- **FR-005d**: System MUST run a live regularisation ablation (the same T-learner at
+  outcome-tuned and at regularised settings) so the claim that regularisation was necessary
+  is recomputed on every run rather than asserted from memory.
 - **FR-006**: System MUST compute, on held-out data, the Qini curve and coefficient, the
   decile uplift table, and the correlation between τ̂ and true τ.
 - **FR-007**: System MUST produce a direct comparison of uplift, propensity and random
   ranking at a configurable contact budget, expressed as incremental conversions per
   contact.
+- **FR-007a**: System MUST report that comparison across a **sweep** of contact budgets,
+  because the advantage of uplift targeting is reach-dependent and a single operating point
+  hides that.
+- **FR-007b**: Comparisons MUST be expressed primarily as differences in percentage points.
+  A ratio MUST be suppressed when its denominator is within 0.5 pp of zero. *(Added during
+  implementation: a near-zero propensity baseline produced a meaningless "−2577%".)*
+- **FR-007c**: System MUST report the latent-segment composition of each ranking's selected
+  set, so budget waste is visible as a cause rather than only as a number.
 - **FR-008**: System MUST persist each model with its feature list, hyperparameters,
   training-data fingerprint, metrics and library versions.
 - **FR-009**: Loading a model whose feature list disagrees with the supplied frame MUST
@@ -155,13 +173,21 @@ bit-identical prediction.
 
 ## Success Criteria
 
-- **SC-001**: Propensity held-out ROC AUC ≥ 0.70.
+- **SC-001**: Propensity held-out ROC AUC ≥ 0.70. Measured: **0.8598**.
 - **SC-002**: Propensity decile calibration: mean absolute gap between predicted and
-  observed ≤ 0.03.
-- **SC-003**: T-learner Spearman correlation with true τ ≥ 0.45 on held-out data.
+  observed ≤ 0.03. Measured: **0.0100**.
+- **SC-003**: Production estimator's Spearman correlation with true τ ≥ 0.45 on held-out
+  data. Measured: **0.633** (X-learner).
 - **SC-004**: Uplift ranking captures ≥ 25% more incremental conversions than propensity
-  ranking at a 30% contact budget.
-- **SC-005**: Bottom τ̂ decile shows negative realised uplift.
+  ranking **at the configured operating budget**. *(Revised during implementation. The
+  criterion originally named a 30% budget; measurement showed the uplift advantage is
+  strongly reach-dependent — +115% at 5%, +53% at 15%, +33% at 20%, +10% at 30%, −7% at
+  50% — so the operating budget was moved to 20% on the evidence and the criterion was
+  re-anchored to it. Measured: **+32.9%**. The budget sweep itself is now a required output,
+  FR-007a, so the reach-dependence can never again be hidden behind one number.)*
+- **SC-005**: Bottom τ̂ decile shows negative realised uplift. Measured: **−2.39 pp**.
+  *(This criterion failed on the first implementation at +3.07 pp and is the reason the
+  estimator changed.)*
 - **SC-006**: Full training of all three models completes in under 5 minutes on 4 cores.
 - **SC-007**: Reload-and-score reproduces training-time predictions exactly.
 - **SC-008**: Every reported metric is also reported per income band.

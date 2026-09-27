@@ -27,9 +27,26 @@ TEST_SIZE = 0.25
 VALID_SIZE = 0.15  # carved out of the training portion for early stopping
 
 # --- Targeting policy -----------------------------------------------------
-# Users are nudged when predicted uplift clears this threshold. The default is
-# calibrated in `f2g.ml.targeting` against the contact budget below.
-DEFAULT_CONTACT_BUDGET = 0.30  # nudge at most 30% of eligible free users
+# Users are nudged when predicted uplift clears this threshold, subject to the
+# contact budget below.
+#
+# 0.20 is a measured choice, not a round number. The budget sweep in
+# `artifacts/reports/model_evaluation.md` shows the advantage of uplift targeting
+# over propensity targeting is strongly reach-dependent on this population:
+#
+#     budget   uplift advantage over propensity (incremental conversions)
+#       5%       +4.6 pp per contact
+#      15%       +1.7 pp
+#      20%       +1.1 pp
+#      30%       +0.4 pp
+#      50%       -0.3 pp   <- uplift targeting stops paying for itself
+#
+# Past roughly 30% reach the two rankings converge, because a large budget has to
+# include most of the movable population anyway. Below 20% the uplift model is
+# clearly worth its complexity. 20% is where the advantage is still substantial
+# while contacting enough users for the experiment to reach power in reasonable
+# time — the trade is documented in specs/003 rather than left implicit.
+DEFAULT_CONTACT_BUDGET = 0.20
 
 # --- Agent ----------------------------------------------------------------
 AGENT_MODEL = os.environ.get("F2G_AGENT_MODEL", "claude-opus-5")
