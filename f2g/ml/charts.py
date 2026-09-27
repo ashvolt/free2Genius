@@ -285,3 +285,87 @@ def budget_sweep_chart(sweep: pd.DataFrame, out_dir: Path, chosen_budget: float)
         )
         paths.append(_save(fig, out_dir, "budget_sweep", theme))
     return paths
+
+
+def policy_value_chart(estimates: pd.DataFrame, out_dir: Path) -> list[Path]:
+    """Doubly-robust policy value per candidate policy, with the oracle marked.
+
+    A dot plot with error bars, not bars: these are estimates with uncertainty,
+    and a solid bar implies a precision the numbers do not have.
+    """
+    dr = estimates[estimates.estimator == "DR"].set_index("policy")
+    oracle = estimates[estimates.estimator == "oracle"].set_index("policy")
+    order = dr["value"].sort_values().index.tolist()
+
+    paths = []
+    for theme in THEMES.values():
+        apply_style(theme)
+        fig, ax = plt.subplots(figsize=(7.6, 0.62 * len(order) + 2.0))
+        ys = range(len(order))
+
+        for y, policy in zip(ys, order):
+            d = dr.loc[policy]
+            ax.plot([d["ci_low"], d["ci_high"]], [y, y],
+                    color=theme.series[0], linewidth=2.0, solid_capstyle="round", zorder=3)
+            ax.plot([d["value"]], [y], marker="o", markersize=8,
+                    color=theme.series[0], markeredgecolor=theme.surface,
+                    markeredgewidth=2.0, zorder=4)
+            if policy in oracle.index:
+                ax.plot([oracle.loc[policy, "value"]], [y], marker="|", markersize=14,
+                        color=theme.text_secondary, markeredgewidth=2.0, zorder=5)
+
+        ax.set_yticks(list(ys))
+        ax.set_yticklabels(order)
+        ax.grid(axis="x")
+        ax.grid(axis="y", visible=False)
+        ax.set_xlabel("Estimated conversion rate under the policy")
+        ax.set_title("Offline policy value — doubly robust, 95% CI")
+        ax.annotate("│ oracle", xy=(0.99, 0.04), xycoords="axes fraction",
+                    ha="right", color=theme.text_secondary, fontsize=8, fontweight="600")
+        caption(
+            fig,
+            f"{SYNTHETIC_NOTE}  The oracle tick is the true value, knowable only in "
+            f"simulation; it is how the estimator is validated rather than the policy.",
+            theme,
+        )
+        paths.append(_save(fig, out_dir, "policy_value", theme))
+    return paths
+
+
+def suppression_chart(by_reason: dict[str, int], selected: int, out_dir: Path) -> list[Path]:
+    """Where the candidate population went. Selected first, then each reason."""
+    labels = ["selected"] + list(by_reason)
+    values = [selected] + [by_reason[k] for k in by_reason]
+
+    paths = []
+    for theme in THEMES.values():
+        apply_style(theme)
+        fig, ax = plt.subplots(figsize=(7.4, 4.2))
+        xs = list(range(len(labels)))
+        colors = [theme.diverge_pos] + [theme.reference] * (len(labels) - 1)
+        # The value-fit suppression is the one worth looking at, so it gets ink.
+        for i, name in enumerate(labels):
+            if name == "value_fit":
+                colors[i] = theme.series[1]
+
+        ax.set_xlim(-0.7, len(labels) - 0.3)
+        ax.set_ylim(0, max(values) * 1.18)
+        fig.canvas.draw()
+        rounded_bars(ax, xs, values, colors=colors, width=0.7)
+
+        for x, v in zip(xs, values):
+            ax.annotate(f"{v:,}", xy=(x, v), xytext=(0, 5), textcoords="offset points",
+                        ha="center", color=theme.text_secondary, fontsize=9, fontweight="600")
+
+        ax.set_xticks(xs)
+        ax.set_xticklabels([l.replace("_", "\n") for l in labels])
+        ax.set_ylabel("Users")
+        ax.set_title("Where the candidate population went")
+        caption(
+            fig,
+            f"{SYNTHETIC_NOTE}  'value_fit' is the honesty gate: users the uplift model "
+            f"would contact, suppressed because Genius would not pay for itself for them.",
+            theme,
+        )
+        paths.append(_save(fig, out_dir, "policy_suppression", theme))
+    return paths

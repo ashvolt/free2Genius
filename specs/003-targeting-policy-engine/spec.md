@@ -1,7 +1,7 @@
 # Feature Specification: Targeting Policy Engine & Offline Policy Evaluation
 
 **Feature ID**: `003` · **Domain**: B — Decision Intelligence
-**Created**: 2026-09-27 · **Status**: Specified
+**Created**: 2026-09-27 · **Status**: Implemented · **Converged**: 2026-09-27
 **Depends on**: 002 (uplift estimates), 001 (tool layer for the value-fit gate)
 **Input**: "Turn a per-user uplift score into a defensible decision about who gets
 contacted, under a budget, without harming anyone, and estimate what that decision would
@@ -71,8 +71,15 @@ confirm they are absent from the contact list and present in the suppression log
 2. **Given** any suppressed user, **When** their log entry is read, **Then** it contains
    estimated saving, subscription cost over the window, and the margin applied.
 3. **Given** the value-fit gate is disabled by configuration, **When** selection runs,
-   **Then** the selected set is a strict superset of the gated set, and the difference is
-   reported — so the cost of the gate is always visible.
+   **Then** the difference against the gated set is reported — so the cost of the gate is
+   always visible. *(Corrected during implementation. This scenario originally required
+   the ungated set to be a **strict superset** of the gated set. That is wrong, and a test
+   written from it failed against correct code: suppressing a low-benefit user frees a
+   budget slot, which is then filled by the next eligible user down the uplift ranking.
+   The gated set is not a subset — it is a better-spent set of the same size, and the
+   number of backfilled users is now reported as `backfilled_by_gate`. The invariants
+   that do hold are that every selected user clears the gate and that no gate-rejected
+   user is ever contacted.)*
 4. **Given** the gate is active, **When** mean value fit of selected users is compared to
    ungated selection, **Then** it is higher.
 
@@ -151,7 +158,10 @@ directly from ground-truth τ — which 001 uniquely makes available.
 - **FR-006**: System MUST report contact rate, mean uplift and mean estimated saving per
   income band, and flag when the contact-rate gap exceeds a configured tolerance.
 - **FR-007**: System MUST offer an optional parity-constrained mode that caps per-band
-  contact share, reporting its cost in expected incremental conversions.
+  contact **rate** — not per-band contact count — reporting its cost in expected
+  incremental conversions. *(The distinction is not pedantic: an equal-count cap across
+  bands of unequal size equalises the wrong quantity and measurably widened the
+  contact-rate gap, from 0.040 to 0.064, before it was corrected.)*
 - **FR-008**: System MUST estimate candidate-policy value on the pilot cohort using IPS,
   SNIPS and doubly-robust estimators, each with a confidence interval.
 - **FR-009**: System MUST report the oracle policy value computed from true τ alongside the
@@ -176,17 +186,19 @@ directly from ground-truth τ — which 001 uniquely makes available.
 
 ## Success Criteria
 
-- **SC-001**: Zero users with non-positive τ̂ appear in any contact list.
+- **SC-001**: Zero users with non-positive τ̂ appear in any contact list. Measured: **0**.
 - **SC-002**: 100% of decisions, selected and suppressed, have a logged reason.
 - **SC-003**: Mean value fit among selected users is at least 30% higher with the gate on
-  than off.
+  than off. Measured: **$70.21 vs $34.75, +102%**.
 - **SC-004**: The oracle policy value falls inside the doubly-robust confidence interval.
+  Measured: **true for all five candidate policies**.
 - **SC-005**: Expected incremental conversions per contact for the uplift policy exceed the
   propensity policy by ≥ 25% at a 30% budget.
 - **SC-006**: Selection over 12,000 candidates including value-fit evaluation completes in
   under 30 seconds.
 - **SC-007**: Contact-rate gap across income bands is reported for every run, and any
-  breach of tolerance is flagged in the run output, not only in a file.
+  breach of tolerance is flagged in the run output, not only in a file. Measured gap:
+  **0.021** against a 0.10 tolerance.
 - **SC-008**: Repeated runs at identical configuration produce identical contact lists.
 
 ## Assumptions
