@@ -76,25 +76,25 @@ def test_assignment_is_idempotent(client, live_user):
     assert a["variant"] == b["variant"]
 
 
-def test_event_idempotency(client, live_user):
+def test_event_idempotency(client, live_user, unique_key):
     client.post(f"/experiment/assign/{live_user}")
-    payload = {"user_id": live_user, "event_type": "click", "idempotency_key": "test-key-1"}
+    payload = {"user_id": live_user, "event_type": "click", "idempotency_key": unique_key}
     first = client.post("/experiment/events", json=payload).json()
     second = client.post("/experiment/events", json=payload).json()
-    assert first["recorded"] != second["recorded"]
-    assert second["duplicate"] is True
+    assert first["recorded"] is True and first["duplicate"] is False
+    assert second["recorded"] is False and second["duplicate"] is True
 
 
-def test_event_for_unassigned_user_is_rejected(client):
+def test_event_for_unassigned_user_is_rejected(client, unique_key):
     r = client.post("/experiment/events", json={
-        "user_id": "no-such-user", "event_type": "conversion", "idempotency_key": "k-unassigned"
+        "user_id": "no-such-user", "event_type": "conversion", "idempotency_key": unique_key
     })
     assert r.status_code == 409
 
 
-def test_invalid_event_type_is_rejected(client, live_user):
+def test_invalid_event_type_is_rejected(client, live_user, unique_key):
     r = client.post("/experiment/events", json={
-        "user_id": live_user, "event_type": "purchase_yacht", "idempotency_key": "k-bad"
+        "user_id": live_user, "event_type": "purchase_yacht", "idempotency_key": unique_key
     })
     assert r.status_code == 422
 
@@ -106,6 +106,7 @@ def test_experiment_config_is_published(client):
 
 
 def test_summary_reports_both_intervals_and_a_verdict(client):
+    """Runs against the isolated test database, so it must tolerate empty arms."""
     body = client.get("/experiment/summary").json()
     assert {"fixed_ci", "sequential_ci"} <= set(body["conversion"])
     assert body["verdict"]["verdict"] in {
