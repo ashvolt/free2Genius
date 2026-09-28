@@ -7,10 +7,13 @@
 ## Before you start
 
 ```bash
-make all      # ~3 minutes: data, models, policy, safety gate, demo experiment
-make api      # terminal 1
-make web      # terminal 2 → http://127.0.0.1:5173
+python run.py setup   # first time only
+python run.py all     # ~3 minutes: data, models, policy, safety gate, demo experiment
+python run.py api     # terminal 1
+python run.py web     # terminal 2 → http://127.0.0.1:5173
 ```
+
+(`make setup`, `make all`, `make api`, `make web` do the same thing if you have `make`.)
 
 ---
 

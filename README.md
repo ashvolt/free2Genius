@@ -111,26 +111,35 @@ here: it *did* fabricate seven dollar figures in testing, and none of them could
 
 ## Running it
 
-Everything except the model download works with **no network and no API key**.
+Requires **Python 3.11+**; the browser console additionally needs **Node 18+**. Everything
+except the model download works with **no network and no API key**.
 
 ```bash
-make setup          # venv + dependencies
-make all            # data -> models -> policy -> safety gate -> demo data -> model card
-make api            # http://127.0.0.1:8000  (OpenAPI docs at /docs)
-make web            # http://127.0.0.1:5173
-make test           # 205 tests
+python run.py setup     # create .venv and install dependencies
+python run.py all       # data -> models -> policy -> safety gate -> demo data -> model card
+python run.py api       # http://127.0.0.1:8000  (OpenAPI docs at /docs)
+python run.py web       # http://127.0.0.1:5173   <- open this
+python run.py test      # 205 tests
 ```
+
+`run.py` works identically on Windows, macOS and Linux and needs nothing beyond the Python you
+already need for the project. Run it with no arguments to list every task. A `Makefile` with
+the same targets is provided for anyone who prefers `make data`, `make api` and so on.
 
 To run the agent on a real local model rather than the deterministic writer:
 
 ```bash
-pip install llama-cpp-python
-make models         # ~2.9GB of open weights
-F2G_LLM_PROVIDER=llamacpp make evals-local
+.venv/bin/pip install llama-cpp-python      # .venv\Scripts\pip on Windows
+python run.py models                        # ~2.9GB of open weights
 ```
 
+Then switch the provider dropdown in the console's Concierge tab. Generation takes 60-110
+seconds on CPU — the latency gap recorded as unmet in
+[spec 005](specs/005-concierge-agent-guardrails/spec.md).
+
 The system is fully functional without those weights: the deterministic provider is a
-**production runtime**, not a test stub ([ADR-006](docs/adr/ADR-006-deterministic-provider.md)).
+**production runtime**, not a test stub ([ADR-006](docs/adr/ADR-006-deterministic-provider.md)),
+and the default provider falls back to it with a warning when no weights are present.
 
 ## What to look at first
 
