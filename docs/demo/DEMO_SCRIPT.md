@@ -7,13 +7,11 @@
 ## Before you start
 
 ```bash
-python run.py setup   # first time only
-python run.py all     # ~3 minutes: data, models, policy, safety gate, demo experiment
-python run.py api     # terminal 1
-python run.py web     # terminal 2 → http://127.0.0.1:5173
+./run.sh setup   # first time only          (Windows: run.bat setup)
+./run.sh all     # ~3 min: data, models, policy, safety gate, demo experiment
+./run.sh api     # terminal 1
+./run.sh web     # terminal 2 → http://127.0.0.1:5173
 ```
-
-(`make setup`, `make all`, `make api`, `make web` do the same thing if you have `make`.)
 
 ---
 

@@ -111,20 +111,43 @@ here: it *did* fabricate seven dollar figures in testing, and none of them could
 
 ## Running it
 
-Requires **Python 3.11+**; the browser console additionally needs **Node 18+**. Everything
-except the model download works with **no network and no API key**.
+### Prerequisites
 
-```bash
-python run.py setup     # create .venv and install dependencies
-python run.py all       # data -> models -> policy -> safety gate -> demo data -> model card
-python run.py api       # http://127.0.0.1:8000  (OpenAPI docs at /docs)
-python run.py web       # http://127.0.0.1:5173   <- open this
-python run.py test      # 205 tests
+| | |
+|---|---|
+| **Python 3.11+** | required — everything except the browser console |
+| **Node 18+** | only for the browser console |
+
+Check Python is present before anything else. On Windows use the launcher, which is what the
+official installer puts on PATH:
+
+```powershell
+py --version         # Windows
+python3 --version    # macOS / Linux
 ```
 
-`run.py` works identically on Windows, macOS and Linux and needs nothing beyond the Python you
-already need for the project. Run it with no arguments to list every task. A `Makefile` with
-the same targets is provided for anyone who prefers `make data`, `make api` and so on.
+If that fails, install Python 3.11 or newer:
+
+- **Windows** — `winget install Python.Python.3.12`, or [python.org/downloads](https://www.python.org/downloads/)
+  ticking **"Add python.exe to PATH"**. If Windows opens the Microsoft Store instead of running
+  Python, turn off the aliases under *Settings → Apps → Advanced app settings → App execution
+  aliases*.
+- **macOS** — `brew install python@3.12`
+- **Debian/Ubuntu** — `sudo apt install python3.12 python3.12-venv`
+
+### Run
+
+```bash
+./run.sh setup     # macOS / Linux          run.bat setup     # Windows
+./run.sh all       #                        run.bat all
+./run.sh api       # :8000, OpenAPI at /docs
+./run.sh web       # :5173   <- open this
+./run.sh test      # 205 tests
+```
+
+The wrappers find a working interpreter for you. If you already know your Python command,
+`python run.py <task>` (or `py run.py <task>` on Windows) is equivalent. Run with no arguments
+to list every task. A `Makefile` with the same targets exists for anyone who prefers `make`.
 
 To run the agent on a real local model rather than the deterministic writer:
 
