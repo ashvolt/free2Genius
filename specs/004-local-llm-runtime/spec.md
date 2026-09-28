@@ -90,6 +90,13 @@ the agent, tool and guardrail code paths are byte-identical, differing only in c
    it is served over that endpoint with the same return shape as the local provider.
 3. **Given** an unknown provider name, **When** the runtime is built, **Then** it fails at
    construction naming the supported providers, not at first inference.
+3a. **Given** the *default* provider is unavailable (no weights on a fresh clone), **When** the
+   runtime is built without an explicit provider name, **Then** it falls back to the
+   deterministic provider with a warning rather than raising. *(Added after a fresh-clone
+   check: `POST /agent/nudge` with no provider returned a 500. Nobody chose the default
+   explicitly, and ADR-006 makes the deterministic provider the degradation target for every
+   failure path. An **explicitly** named unavailable provider still raises — substituting
+   silently would let a caller believe they were measuring a model they were not.)*
 4. **Given** any provider, **When** a completion is requested, **Then** the result carries
    the provider name, model identifier, token counts and wall-clock latency.
 

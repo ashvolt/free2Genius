@@ -37,16 +37,42 @@ PROVIDERS = ("llamacpp", "openai", "deterministic", "anthropic")
 
 
 def build_provider(name: str | None = None, *, tier: str | None = None) -> LLMProvider:
-    """Construct the configured provider.
+    """Construct a provider.
 
-    Fails at construction, not at first inference — an unknown provider name or
-    a missing weights file should surface at startup, when someone is looking,
-    rather than mid-conversation with a user waiting.
+    Two modes, and the difference matters:
+
+    * **Explicit** (`name` given) — fails at construction rather than at first
+      inference. If a caller asked for `llamacpp` and the weights are missing,
+      silently handing back something else would be dishonest: they would think
+      they were measuring a model they were not.
+    * **Automatic** (`name` omitted, so the configured default applies) — falls
+      back to the deterministic provider with a warning. Nobody chose the
+      default explicitly, and ADR-006 makes the deterministic provider the
+      degradation target for every failure path. A fresh clone with no model
+      weights should serve a correct templated answer, not a 500.
     """
+    explicit = name is not None
     name = (name or config.LLM_PROVIDER).lower()
 
+    if not explicit:
+        try:
+            return _construct(name, tier)
+        except ProviderUnavailable as exc:
+            log.warning(
+                "default provider %r is unavailable (%s); falling back to the "
+                "deterministic provider. Run `make models` and "
+                "`pip install llama-cpp-python` to use a local model.",
+                name, exc,
+            )
+            return DeterministicProvider()
+
+    return _construct(name, tier)
+
+
+def _construct(name: str, tier: str | None) -> LLMProvider:
     if name == "deterministic":
         return DeterministicProvider()
+
 
     if name == "llamacpp":
         from f2g.llm.providers.llamacpp import LlamaCppProvider

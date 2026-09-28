@@ -175,6 +175,35 @@ def test_repeat_detection():
 
 # -- providers -------------------------------------------------------------
 
+def test_default_provider_degrades_when_weights_are_missing(monkeypatch, tmp_path):
+    """A fresh clone with no model weights must serve, not 500.
+
+    Nobody chose the default explicitly, and ADR-006 makes the deterministic
+    provider the degradation target for every failure path. This was a real
+    defect: POST /agent/nudge with no provider returned a 500 on a fresh clone.
+    """
+    from f2g import config
+
+    monkeypatch.setattr(config, "MODEL_DIR", tmp_path)
+    monkeypatch.setattr(config, "LLM_PROVIDER", "llamacpp")
+    provider = build_provider()
+    assert provider.name == "deterministic"
+
+
+def test_explicit_provider_never_silently_substitutes(monkeypatch, tmp_path):
+    """The other half of the contract.
+
+    A caller who asked for `llamacpp` and got a template back would believe they
+    were measuring a model they were not.
+    """
+    from f2g import config
+    from f2g.llm.base import ProviderUnavailable
+
+    monkeypatch.setattr(config, "MODEL_DIR", tmp_path)
+    with pytest.raises(ProviderUnavailable, match="model weights not found"):
+        build_provider("llamacpp")
+
+
 def test_unknown_provider_fails_at_construction_not_first_call():
     from f2g.llm.base import ProviderUnavailable
 
