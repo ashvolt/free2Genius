@@ -176,6 +176,21 @@ def test() -> None:
     py("-m", "pytest", "tests/", "-q")
 
 
+def diagrams() -> None:
+    """Parse-check every Mermaid diagram in docs/ and specs/.
+
+    A broken diagram renders as an error box on GitHub and is invisible in a
+    diff, so it is worth checking with the real parser rather than by eye.
+    """
+    npm = shutil.which("npm")
+    if npm is None:
+        die("npm was not found on PATH; the diagram checker needs Node.")
+    web_dir = ROOT / "web"
+    if not (web_dir / "node_modules" / "mermaid").exists():
+        run([npm, "install"], cwd=web_dir)
+    run([npm, "run", "diagrams"], cwd=web_dir)
+
+
 def clean() -> None:
     """Remove generated artifacts. Model weights are kept."""
     import shutil as sh
@@ -192,11 +207,12 @@ def clean() -> None:
 TASKS = {
     "setup": setup, "models": models, "data": data, "train": train,
     "policy": policy, "evals": evals, "demo": demo, "card": card,
-    "all": all_, "api": api, "web": web, "test": test, "clean": clean,
+    "all": all_, "api": api, "web": web, "test": test, "diagrams": diagrams,
+    "clean": clean,
 }
 
-ORDER = ["setup", "all", "api", "web", "test", "models", "data", "train",
-         "policy", "evals", "demo", "card", "clean"]
+ORDER = ["setup", "all", "api", "web", "test", "diagrams", "models", "data",
+         "train", "policy", "evals", "demo", "card", "clean"]
 
 
 def usage() -> None:

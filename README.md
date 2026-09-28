@@ -171,6 +171,13 @@ The system is fully functional without those weights: the deterministic provider
 **production runtime**, not a test stub ([ADR-006](docs/adr/ADR-006-deterministic-provider.md)),
 and the default provider falls back to it with a warning when no weights are present.
 
+## New to this project?
+
+**Start with [docs/learn/](docs/learn/README.md)** — a seven-part guide that teaches the
+system from zero: the business problem, the architecture, a low-level walk through each
+layer, the nine build stages and what broke at each, and a demo script with the questions
+you will be asked. About four hours end to end; the ten-minute orientation is at the top.
+
 ## What to look at first
 
 Ten minutes, in this order:
