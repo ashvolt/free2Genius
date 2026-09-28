@@ -35,7 +35,7 @@ def _load(path: Path) -> dict[str, Any]:
             "  python -m f2g.data.generate && python -m f2g.ml.train "
             "&& python -m f2g.ml.run_policy && python -m f2g.evals.run"
         )
-    return json.loads(path.read_text())
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def render(
@@ -256,14 +256,14 @@ def generate() -> str:
     model_report = _load(REPORT_DIR / "model_evaluation.json")
     policy_report = _load(REPORT_DIR / "policy_report.json")
     eval_path = EVAL_DIR / "latest.json"
-    eval_report = json.loads(eval_path.read_text()) if eval_path.exists() else None
+    eval_report = json.loads(eval_path.read_text(encoding="utf-8")) if eval_path.exists() else None
     return render(model_report, policy_report, eval_report)
 
 
 def main() -> None:
     card = generate()
     CARD_PATH.parent.mkdir(parents=True, exist_ok=True)
-    CARD_PATH.write_text(card)
+    CARD_PATH.write_text(card, encoding="utf-8")
     print(f"model card -> {CARD_PATH} ({len(card.splitlines())} lines)")
 
 

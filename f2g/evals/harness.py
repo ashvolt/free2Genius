@@ -247,4 +247,4 @@ def load_baseline(path: Path | None = None) -> dict[str, Any] | None:
     path = path or (REPORT_DIR / "baseline.json")
     if not path.exists():
         return None
-    return json.loads(path.read_text())
+    return json.loads(path.read_text(encoding="utf-8"))

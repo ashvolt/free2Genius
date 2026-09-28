@@ -33,7 +33,7 @@ def test_model_card_matches_current_evaluation_output():
         pytest.skip("run the pipeline first: make all")
 
     generated = model_card.generate()
-    committed = model_card.CARD_PATH.read_text()
+    committed = model_card.CARD_PATH.read_text(encoding="utf-8")
 
     # The generated-on date is the only line expected to move.
     def strip_date(text: str) -> list[str]:
@@ -45,14 +45,14 @@ def test_model_card_matches_current_evaluation_output():
 
 
 def test_model_card_names_its_limitations():
-    card = model_card.CARD_PATH.read_text()
+    card = model_card.CARD_PATH.read_text(encoding="utf-8")
     for required in ("Known limitations", "Synthetic data", "Out-of-scope use",
                      "Failure modes"):
         assert required in card, f"model card is missing the '{required}' section"
 
 
 def test_model_card_states_the_data_is_synthetic():
-    assert "synthetic" in model_card.CARD_PATH.read_text().lower()
+    assert "synthetic" in model_card.CARD_PATH.read_text(encoding="utf-8").lower()
 
 
 def test_model_card_generation_fails_loudly_without_artifacts(tmp_path, monkeypatch):
@@ -63,7 +63,7 @@ def test_model_card_generation_fails_loudly_without_artifacts(tmp_path, monkeypa
 
 def test_every_risk_names_a_control_or_an_acceptance():
     """A mitigation with no control is accepted risk, and must say so."""
-    register = (DOCS / "RISK_REGISTER.md").read_text()
+    register = (DOCS / "RISK_REGISTER.md").read_text(encoding="utf-8")
     sections = [s for s in register.split("\n## ") if s.startswith("R")]
     assert len(sections) >= 10, "risk register looks truncated"
     for section in sections:
@@ -74,14 +74,14 @@ def test_every_risk_names_a_control_or_an_acceptance():
 
 
 def test_risk_register_links_controls_to_code():
-    register = (DOCS / "RISK_REGISTER.md").read_text()
+    register = (DOCS / "RISK_REGISTER.md").read_text(encoding="utf-8")
     for path in ("f2g/agent/guardrails.py", "f2g/ml/policy.py",
                  "f2g/experiment/analysis.py", "f2g/agent/scope.py"):
         assert path in register, f"no risk cites {path}"
 
 
 def test_consent_note_covers_the_required_ground():
-    note = (DOCS / "CONSENT_AND_DATA_USE.md").read_text()
+    note = (DOCS / "CONSENT_AND_DATA_USE.md").read_text(encoding="utf-8")
     for required in ("Purpose limitation", "Lawful basis", "Retention", "Rights",
                      "Where the data goes"):
         assert required in note
@@ -89,7 +89,7 @@ def test_consent_note_covers_the_required_ground():
 
 def test_governance_docs_state_synthetic_provenance():
     for name in ("MODEL_CARD.md", "RISK_REGISTER.md", "CONSENT_AND_DATA_USE.md"):
-        text = (DOCS / name).read_text().lower()
+        text = (DOCS / name).read_text(encoding="utf-8").lower()
         assert "synthetic" in text, f"{name} does not state its data provenance"
 
 

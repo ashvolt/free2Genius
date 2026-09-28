@@ -86,7 +86,8 @@ class ModelBundle:
         # a pickle — useful in review, and in CI where you want the metrics
         # without importing the model.
         (directory / f"{self.meta.name}.meta.json").write_text(
-            json.dumps(asdict(self.meta), indent=2, default=str)
+            json.dumps(asdict(self.meta), indent=2, default=str),
+            encoding="utf-8",
         )
         return path
 

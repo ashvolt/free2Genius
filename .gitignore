@@ -7,14 +7,16 @@ venv/
 .pytest_cache/
 .ruff_cache/
 
-# Generated artifacts (regenerate with `make data && make train`)
-data/
-artifacts/
+# Generated artifacts (regenerate with `python run.py data && python run.py train`).
+# Anchored with a leading slash: a bare `data/` also matches `f2g/data/`, which
+# silently excluded the entire data package from the repository.
+/data/
+/artifacts/
 *.db
 *.sqlite3
 
-# Open-weights model files (~2.9GB). Fetch with `make models`.
-models/
+# Open-weights model files (~2.9GB). Fetch with `python run.py models`.
+/models/
 *.gguf
 
 # Node

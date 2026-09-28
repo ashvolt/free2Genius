@@ -120,7 +120,7 @@ def test_bundle_writes_readable_sidecar(cohorts, tmp_path):
         None,
     )
     bundle.save(tmp_path)
-    meta = json.loads((tmp_path / "tmp_meta.meta.json").read_text())
+    meta = json.loads((tmp_path / "tmp_meta.meta.json").read_text(encoding="utf-8"))
     assert meta["feature_names"] == pipe.columns
     assert meta["versions"]["lightgbm"]
 

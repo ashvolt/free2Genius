@@ -528,8 +528,8 @@ def main() -> None:
     pilot = pd.read_csv(pilot_path)
     report = train_all(pilot, config.RANDOM_SEED)
 
-    (REPORT_DIR / "model_evaluation.json").write_text(json.dumps(report, indent=2, default=float))
-    (REPORT_DIR / "model_evaluation.md").write_text(_md_report(report))
+    (REPORT_DIR / "model_evaluation.json").write_text(json.dumps(report, indent=2, default=float), encoding="utf-8")
+    (REPORT_DIR / "model_evaluation.md").write_text(_md_report(report), encoding="utf-8")
 
     comp = pd.DataFrame(report["policy_comparison"]).set_index("ranking")
     prod = report["production_estimator"]

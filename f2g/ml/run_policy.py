@@ -241,8 +241,8 @@ def main() -> None:
     evaluate = evaluate_candidates(cfg)
 
     payload = {"config": cfg.to_dict(), "decide": decide, "evaluate": evaluate}
-    (REPORT_DIR / "policy_report.json").write_text(json.dumps(payload, indent=2, default=float))
-    (REPORT_DIR / "policy_report.md").write_text(_report(decide, evaluate, cfg))
+    (REPORT_DIR / "policy_report.json").write_text(json.dumps(payload, indent=2, default=float), encoding="utf-8")
+    (REPORT_DIR / "policy_report.md").write_text(_report(decide, evaluate, cfg), encoding="utf-8")
 
     from f2g.ml import charts
 

@@ -84,11 +84,13 @@ def main() -> int:
             _print_metrics(payload["metrics"])
             summaries.append({"label": label, **payload["metrics"]})
             (REPORT_DIR / f"eval_{label.replace(' ', '_')}.json").write_text(
-                json.dumps(payload, indent=2, default=str)
+                json.dumps(payload, indent=2, default=str),
+                encoding="utf-8",
             )
 
         (REPORT_DIR / "provider_comparison.json").write_text(
-            json.dumps(summaries, indent=2, default=str)
+            json.dumps(summaries, indent=2, default=str),
+            encoding="utf-8",
         )
         print(f"\ncomparison -> {REPORT_DIR / 'provider_comparison.json'}")
         return 0
@@ -97,7 +99,7 @@ def main() -> int:
     m = payload["metrics"]
     _print_metrics(m)
 
-    (REPORT_DIR / "latest.json").write_text(json.dumps(payload, indent=2, default=str))
+    (REPORT_DIR / "latest.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
 
     passed, failures = gate(m, baseline)
     print("\n" + "=" * 62)
@@ -114,7 +116,7 @@ def main() -> int:
         if not passed:
             print("refusing to record a failing run as the baseline")
             return 1
-        (REPORT_DIR / "baseline.json").write_text(json.dumps(m, indent=2, default=str))
+        (REPORT_DIR / "baseline.json").write_text(json.dumps(m, indent=2, default=str), encoding="utf-8")
         print(f"baseline recorded -> {REPORT_DIR / 'baseline.json'}")
 
     return 0 if (passed or args.no_gate) else 1

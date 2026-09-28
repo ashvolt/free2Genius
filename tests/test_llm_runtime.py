@@ -231,7 +231,7 @@ def test_agent_module_imports_no_provider_implementation():
     """
     import pathlib
 
-    source = pathlib.Path("f2g/agent/concierge.py").read_text()
+    source = pathlib.Path("f2g/agent/concierge.py").read_text(encoding="utf-8")
     assert "providers.llamacpp" not in source
     assert "providers.openai_compat" not in source
     assert "providers.anthropic_cloud" not in source
