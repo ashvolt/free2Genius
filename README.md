@@ -115,7 +115,7 @@ here: it *did* fabricate seven dollar figures in testing, and none of them could
 
 | | |
 |---|---|
-| **Python 3.11+** | required — everything except the browser console |
+| **Python 3.11+** | required — everything except the browser console (tested on 3.11 and 3.13) |
 | **Node 18+** | only for the browser console |
 
 Check Python is present before anything else. On Windows use the launcher, which is what the
@@ -136,6 +136,13 @@ If that fails, install Python 3.11 or newer:
 - **Debian/Ubuntu** — `sudo apt install python3.12 python3.12-venv`
 
 ### Run
+
+> This project lives on the branch **`claude/sleepy-clarke-2h5iey`**, which is currently the
+> only branch on the remote. After cloning, make sure you are on it and up to date:
+>
+> ```bash
+> git fetch origin && git checkout claude/sleepy-clarke-2h5iey && git pull
+> ```
 
 ```bash
 ./run.sh setup     # macOS / Linux          run.bat setup     # Windows

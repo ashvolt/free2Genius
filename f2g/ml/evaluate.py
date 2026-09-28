@@ -31,6 +31,11 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
+# `np.trapz` was renamed to `np.trapezoid` in NumPy 2.0 and the old name is
+# deprecated. Bind whichever exists rather than pinning a NumPy major version
+# on every consumer of this package.
+_trapezoid = getattr(np, "trapezoid", None) or np.trapz
+
 
 # --------------------------------------------------------------------------
 # Propensity: discrimination and calibration
@@ -139,8 +144,8 @@ def qini_curve(y: np.ndarray, t: np.ndarray, score: np.ndarray, steps: int = 100
     # Random targeting yields incremental conversions proportional to reach.
     baseline = [f * total_incremental for f in fractions]
 
-    area_model = float(np.trapezoid(qini_vals, fractions))
-    area_random = float(np.trapezoid(baseline, fractions))
+    area_model = float(_trapezoid(qini_vals, fractions))
+    area_random = float(_trapezoid(baseline, fractions))
     denom = abs(total_incremental) * 0.5
     coefficient = (area_model - area_random) / denom if denom > 0 else 0.0
 
