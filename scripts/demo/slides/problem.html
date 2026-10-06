@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>The question</title><link rel="stylesheet" href="slide.css"></head>
+<body>
+  <div class="kicker">The modelling decision</div>
+  <h2>Propensity ranks who will convert.<br>Uplift ranks who converts <em>because</em> you asked.</h2>
+  <div class="rows">
+    <div class="row bad">
+      <div class="k">Sure things</div>
+      <div class="v">High propensity, zero uplift. Contacting them buys a conversion you already had.</div>
+    </div>
+    <div class="row good">
+      <div class="k">Persuadables</div>
+      <div class="v">The only group a contact changes. The entire budget should go here.</div>
+    </div>
+    <div class="row warn">
+      <div class="k">Sleeping dogs</div>
+      <div class="v">Negative uplift — contact makes them less likely. Ranking by propensity finds them.</div>
+    </div>
+    <div class="row">
+      <div class="k">Lost causes</div>
+      <div class="v">No response either way. Cheap to skip, and skipping them is free budget.</div>
+    </div>
+  </div>
+  <div class="foot">
+    Two-model T-learner plus an X-learner, trained on a synthetic randomised cohort.
+    Evaluated with Qini curves and offline policy evaluation, not accuracy.
+  </div>
+</body></html>

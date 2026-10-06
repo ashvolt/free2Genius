@@ -7,6 +7,22 @@
 > data or production model was used. Pricing is an illustrative placeholder. Every number in
 > this README is reproducible from a clean checkout with `make all`.
 
+## Watch the walkthrough (9 min)
+
+[![Free2Genius demo — uplift targeting, evidence-grounded agent, always-valid experiment](https://img.youtube.com/vi/RgPZ0DGvoOw/maxresdefault.jpg)](https://youtu.be/RgPZ0DGvoOw)
+
+A narrated tour of the running system: the value-fit gate that suppresses 7,530 candidates the
+product would not pay for, evidence chips that trace every figure back to the tool call behind
+it, the scope policy that declines investment questions before any model loads, a real
+open-weights model answering through Ollama, and always-valid intervals on the experiment.
+
+It also shows the system getting something wrong. The local model grounds every number
+correctly and then draws the opposite conclusion from them — kept in the cut, because no
+guardrail here checks reasoning, and that is the argument for human review before send.
+
+The video is rendered from this repository rather than screen-recorded: voice, browser and edit
+all come from `python scripts/demo/record.py`. See [scripts/demo/](scripts/demo/README.md).
+
 ---
 
 ## The problem
@@ -156,16 +172,31 @@ The wrappers find a working interpreter for you. If you already know your Python
 `python run.py <task>` (or `py run.py <task>` on Windows) is equivalent. Run with no arguments
 to list every task. A `Makefile` with the same targets exists for anyone who prefers `make`.
 
-To run the agent on a real local model rather than the deterministic writer:
+To run the agent on a real local model rather than the deterministic writer, pick one of
+two paths and then choose it from the provider dropdown next to **Regenerate** (nudge card)
+or **Send** (chat) in the console's Concierge tab.
+
+**Already running Ollama, LM Studio or vLLM** — nothing to download, it reuses the models
+you have. Defaults assume Ollama:
+
+```bash
+ollama list                                 # pick any instruct model you already have
+export F2G_OPENAI_MODEL=qwen2.5:7b          # default; set F2G_OPENAI_BASE_URL for non-Ollama
+python run.py api
+```
+
+Then select **Ollama / local server** in the dropdown.
+
+**In-process llama.cpp** — no server, but it downloads its own weights:
 
 ```bash
 .venv/bin/pip install llama-cpp-python      # .venv\Scripts\pip on Windows
 python run.py models                        # ~2.9GB of open weights
 ```
 
-Then switch the provider dropdown in the console's Concierge tab. Generation takes 60-110
-seconds on CPU — the latency gap recorded as unmet in
-[spec 005](specs/005-concierge-agent-guardrails/spec.md).
+Either way generation takes 60-110 seconds — the latency gap recorded as unmet in
+[spec 005](specs/005-concierge-agent-guardrails/spec.md). An explicitly chosen provider
+fails with a 503 naming what it needs, rather than quietly falling back.
 
 The system is fully functional without those weights: the deterministic provider is a
 **production runtime**, not a test stub ([ADR-006](docs/adr/ADR-006-deterministic-provider.md)),

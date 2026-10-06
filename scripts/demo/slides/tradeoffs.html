@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Trade-offs</title><link rel="stylesheet" href="slide.css"></head>
+<body>
+  <div class="kicker">What this does not do</div>
+  <h2>Stated limits</h2>
+  <div class="rows">
+    <div class="row bad">
+      <div class="k">Latency: 80s local</div>
+      <div class="v">Too slow for a live surface. Honest fit is batch drafting with human review — recorded as unmet in spec 005.</div>
+    </div>
+    <div class="row warn">
+      <div class="k">Synthetic data</div>
+      <div class="v">Validates the pipeline, not the business case. Real uplift numbers would move.</div>
+    </div>
+    <div class="row warn">
+      <div class="k">No grammar off-process</div>
+      <div class="v">In-process llama.cpp constrains output with GBNF — malformed tool calls impossible. The server backend relies on validation plus a bounded repair loop. Measured per backend, not assumed.</div>
+    </div>
+    <div class="row bad">
+      <div class="k">Guardrails check grounding, not reasoning</div>
+      <div class="v">Every figure can trace to a tool call while the sentence built from them draws the wrong conclusion. Observed on camera with a 7B model. No automated check in this system catches it — a human reviewer does.</div>
+    </div>
+    <div class="row">
+      <div class="k">Fairness is a monitor</div>
+      <div class="v">It reports the policy-induced gap. It does not optimise it away.</div>
+    </div>
+    <div class="row">
+      <div class="k">No authentication</div>
+      <div class="v">Demonstration service. Must not be exposed publicly.</div>
+    </div>
+  </div>
+</body></html>

@@ -1,0 +1,60 @@
+/* Slides for the scenes with no UI of their own — architecture, framing, trade-offs.
+   Deliberately the same tokens as the console (web/src/styles.css), so a slide and a
+   screenshot of the product do not look like they came from two different projects. */
+:root {
+  --bg: #0d1117;
+  --surface-1: #161b22;
+  --border: #272e38;
+  --text-primary: #e6edf3;
+  --text-secondary: #9aa6b2;
+  --series-1: #4493f8;
+  --pos: #3fb950;
+  --critical: #f85149;
+  --warn: #d29922;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 1600px; height: 900px;
+  background: var(--bg); color: var(--text-primary);
+  font: 400 20px/1.55 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 90px 110px; overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.kicker {
+  font-size: 14px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--series-1); font-weight: 600; margin-bottom: 18px;
+}
+
+h1 { font-size: 66px; line-height: 1.08; font-weight: 680; letter-spacing: -0.02em; }
+h1 .dim { color: var(--text-secondary); font-weight: 400; }
+h2 { font-size: 40px; line-height: 1.15; font-weight: 650; letter-spacing: -0.015em; }
+
+.sub {
+  margin-top: 22px; font-size: 25px; color: var(--text-secondary);
+  max-width: 1080px; line-height: 1.45;
+}
+
+.rows { margin-top: 46px; display: grid; gap: 14px; max-width: 1240px; }
+
+.row {
+  display: grid; grid-template-columns: 300px 1fr; gap: 28px; align-items: start;
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-left: 3px solid var(--series-1);
+  border-radius: 8px; padding: 20px 24px;
+}
+.row .k { font-weight: 650; font-size: 21px; }
+.row .v { color: var(--text-secondary); font-size: 20px; }
+.row.bad { border-left-color: var(--critical); }
+.row.warn { border-left-color: var(--warn); }
+.row.good { border-left-color: var(--pos); }
+
+.foot {
+  margin-top: 44px; font-size: 17px; color: var(--text-secondary);
+  border-top: 1px solid var(--border); padding-top: 18px;
+}
+.mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.93em; }
+.note { color: var(--warn); }

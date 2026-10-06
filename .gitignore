@@ -30,3 +30,7 @@ web/.vite/
 
 # Local screenshots from manual verification
 web/*.png
+
+# Demo voice model (~350MB). Fetch from the kokoro-onnx model-files-v1.0 release;
+# see scripts/demo/README.md.
+/scripts/demo/assets/
