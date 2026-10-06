@@ -1,7 +1,16 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { api, type AgentResult, type Evidence } from "../lib/api";
 import { CHECK_LABEL } from "../lib/format";
-import { Badge, Card, Empty, ErrorState } from "./common";
+import { Badge, Card, Empty, ErrorState, ProviderSelect } from "./common";
+
+/* An explicitly chosen provider fails rather than falling back to the
+   deterministic writer, so the error has to say what that provider needs. */
+const PROVIDER_HINT: Record<string, string | undefined> = {
+  openai:
+    "This needs an OpenAI-compatible server reachable at F2G_OPENAI_BASE_URL (Ollama's default is http://localhost:11434/v1) serving F2G_OPENAI_MODEL. Check `ollama list` for a model you have.",
+  llamacpp:
+    "In-process llama.cpp needs the GGUF weights (python run.py models) and llama-cpp-python installed. If you already run Ollama, pick that provider instead — it uses the models you have.",
+};
 
 /** Split the message so every figure with provenance becomes a clickable chip.
  *
@@ -38,7 +47,38 @@ function renderInline(text: string) {
   });
 }
 
-export function NudgePreview({ userId, provider }: { userId: string | null; provider: string }) {
+/** Why the deterministic writer took over. The reason changes what to do next,
+ *  so the banner must not assert one cause for every failure. */
+function degradedExplanation(reason: string): string {
+  if (/timeout|timed out/i.test(reason)) {
+    return (
+      "The provider did not answer within its budget, so the user received a templated, " +
+      "fully grounded message rather than waiting or seeing nothing. A cold local model " +
+      "loading its weights is the usual cause; raise F2G_LLM_TIMEOUT_S or warm the model."
+    );
+  }
+  if (/unavailable|unreachable|not found/i.test(reason)) {
+    return (
+      "The provider could not be reached at all, so the templated writer answered instead. " +
+      "This is the path a fresh clone with no model weights takes."
+    );
+  }
+  return (
+    "This is the designed failure path: the model produced something the guardrails " +
+    "rejected, so the user received a templated, fully grounded message instead of " +
+    "nothing — and instead of the rejected text."
+  );
+}
+
+export function NudgePreview({
+  userId,
+  provider,
+  onProviderChange,
+}: {
+  userId: string | null;
+  provider: string;
+  onProviderChange: (next: string) => void;
+}) {
   const [result, setResult] = useState<AgentResult | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
@@ -56,23 +96,55 @@ export function NudgePreview({ userId, provider }: { userId: string | null; prov
       .catch((e) => live && setError(e))
       .finally(() => live && setLoading(false));
     return () => { live = false; };
-  }, [userId, provider]);
+    // `provider` is read here but deliberately not a dependency: changing the
+    // dropdown must not fire a run on its own. Regenerate is what does that.
+  }, [userId]);
+
+  function regenerate() {
+    if (!userId) return;
+    setLoading(true);
+    setOpen(null);
+    api
+      .nudge(userId, provider, true)
+      .then((r) => (setResult(r), setError(null)))
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }
+
+  /* The picker and Regenerate ride along in every state, including the error
+     one: a provider that is unavailable fails loudly by design, and the control
+     that got you there has to still be on screen to get you back out. */
+  const actions = (
+    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      {result?.cached && <Badge tone="neutral">cached</Badge>}
+      <ProviderSelect value={provider} onChange={onProviderChange} disabled={loading} />
+      <button className="ghost" onClick={regenerate} disabled={loading || !userId}>
+        Regenerate
+      </button>
+    </div>
+  );
 
   const parts = useChips(result?.message ?? "", result?.evidence ?? []);
 
   if (!userId) return <Empty title="Select a user" detail="Pick a row in the cohort table." />;
   if (loading) {
     return (
-      <Card title="Nudge preview" hint="Generating…">
+      <Card title="Nudge preview" hint="Generating…" actions={actions}>
         <div className="state">
           <span className="spinner" aria-hidden="true" />
-          Running the agent for {userId}. Local generation takes a few seconds per tool call —
-          this is real inference, not a canned response.
+          Running the agent for {userId} with the {provider} provider. Local generation takes a
+          few seconds per tool call — this is real inference, not a canned response.
         </div>
       </Card>
     );
   }
-  if (error) return <ErrorState error={error} />;
+  if (error) {
+    return (
+      <Card title="Nudge preview" actions={actions}>
+        <ErrorState error={error} hint={PROVIDER_HINT[provider]} />
+      </Card>
+    );
+  }
   if (!result) return <Empty title="No nudge yet" />;
 
   const checks = Object.entries(result.guardrails.checks);
@@ -82,30 +154,12 @@ export function NudgePreview({ userId, provider }: { userId: string | null; prov
     <Card
       title="Nudge preview"
       hint="Every monetary figure is a chip. Click one to see the tool call that produced it."
-      actions={
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {result.cached && <Badge tone="neutral">cached</Badge>}
-          <button
-            className="ghost"
-            onClick={() => {
-              setLoading(true);
-              api.nudge(userId, provider, true)
-                .then(setResult).catch(setError).finally(() => setLoading(false));
-            }}
-          >
-            Regenerate
-          </button>
-        </div>
-      }
+      actions={actions}
     >
       {result.degraded && (
         <div className="synthetic-banner" style={{ marginTop: 0 }}>
           <strong>Degraded to the deterministic writer.</strong> {result.degraded_reason}
-          <div style={{ marginTop: 4 }}>
-            This is the designed failure path: the model produced something the guardrails
-            rejected, so the user received a templated, fully grounded message instead of
-            nothing — and instead of the rejected text.
-          </div>
+          <div style={{ marginTop: 4 }}>{degradedExplanation(result.degraded_reason)}</div>
         </div>
       )}
 

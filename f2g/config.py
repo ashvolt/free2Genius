@@ -62,8 +62,12 @@ MODEL_TIER = os.environ.get("F2G_MODEL_TIER", "fast")
 # One of: llamacpp | openai | deterministic | anthropic
 LLM_PROVIDER = os.environ.get("F2G_LLM_PROVIDER", "llamacpp")
 
-OPENAI_COMPAT_BASE_URL = os.environ.get("F2G_OPENAI_BASE_URL", "http://localhost:8000/v1")
-OPENAI_COMPAT_MODEL = os.environ.get("F2G_OPENAI_MODEL", "Qwen/Qwen2.5-3B-Instruct")
+# Defaults point at Ollama, which is the OpenAI-compatible server most likely to
+# already be running on a developer machine and which serves models that are
+# already downloaded. The previous default of :8000 was this service's own port,
+# so the provider could only ever talk to itself.
+OPENAI_COMPAT_BASE_URL = os.environ.get("F2G_OPENAI_BASE_URL", "http://localhost:11434/v1")
+OPENAI_COMPAT_MODEL = os.environ.get("F2G_OPENAI_MODEL", "qwen2.5:7b")
 
 LLM_N_CTX = int(os.environ.get("F2G_LLM_N_CTX", 8192))
 LLM_N_THREADS = int(os.environ.get("F2G_LLM_N_THREADS", 4))

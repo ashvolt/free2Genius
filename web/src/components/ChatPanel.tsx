@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { api, type AgentResult } from "../lib/api";
 import { CHECK_LABEL } from "../lib/format";
-import { Badge, Card } from "./common";
+import { Badge, Card, ProviderSelect } from "./common";
 
 interface Turn {
   role: "user" | "agent";
@@ -15,7 +15,15 @@ const SUGGESTIONS = [
   "Should I invest my savings instead?",
 ];
 
-export function ChatPanel({ userId, provider }: { userId: string | null; provider: string }) {
+export function ChatPanel({
+  userId,
+  provider,
+  onProviderChange,
+}: {
+  userId: string | null;
+  provider: string;
+  onProviderChange: (next: string) => void;
+}) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -108,6 +116,7 @@ export function ChatPanel({ userId, provider }: { userId: string | null; provide
           disabled={!userId || busy}
           aria-label="Message"
         />
+        <ProviderSelect value={provider} onChange={onProviderChange} disabled={busy} />
         <button className="primary" type="submit" disabled={!userId || busy || !input.trim()}>
           Send
         </button>

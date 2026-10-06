@@ -14,11 +14,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "experiment", label: "Experiment" },
 ];
 
-const PROVIDERS = [
-  { id: "deterministic", label: "Deterministic (instant)" },
-  { id: "llamacpp", label: "Local model (slow, real)" },
-];
-
 function useTheme() {
   const [theme, setTheme] = useState<"light" | "dark" | null>(
     () => (localStorage.getItem("f2g-theme") as "light" | "dark" | null) ?? null,
@@ -85,18 +80,6 @@ export default function App() {
               {health.llm.provider ? ` · ${health.llm.provider}` : ""}
             </Badge>
           )}
-          {tab === "agent" && (
-            <select
-              className="theme-toggle"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value)}
-              aria-label="Generation provider"
-            >
-              {PROVIDERS.map((p) => (
-                <option key={p.id} value={p.id}>{p.label}</option>
-              ))}
-            </select>
-          )}
         </div>
       </nav>
 
@@ -114,8 +97,8 @@ export default function App() {
               </button>
             </p>
           )}
-          <NudgePreview userId={userId} provider={provider} />
-          <ChatPanel userId={userId} provider={provider} />
+          <NudgePreview userId={userId} provider={provider} onProviderChange={setProvider} />
+          <ChatPanel userId={userId} provider={provider} onProviderChange={setProvider} />
         </div>
       )}
 

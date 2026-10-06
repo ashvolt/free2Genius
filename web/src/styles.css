@@ -309,3 +309,14 @@ button.ghost:hover { color: var(--text-primary); border-color: var(--border-stro
 .verdict.ship { background: var(--good-bg); border-color: var(--good); color: var(--good); }
 .verdict.stop_for_harm { background: var(--critical-bg); border-color: var(--critical); color: var(--critical); }
 .verdict.stop_for_futility { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
+
+/* Same chrome as .theme-toggle, but no margin-left:auto — it lives inside a
+   card's action row and a chat composer, where it must not push its siblings. */
+.provider-select {
+  appearance: none; cursor: pointer;
+  background: var(--surface-1); border: 1px solid var(--border);
+  color: var(--text-secondary); border-radius: var(--radius-sm);
+  padding: 6px 10px; font: inherit; font-size: 12.5px;
+}
+.provider-select:hover:not(:disabled) { color: var(--text-primary); border-color: var(--border-strong); }
+.provider-select:disabled { opacity: 0.5; cursor: not-allowed; }

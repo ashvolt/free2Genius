@@ -32,6 +32,7 @@ from f2g.api.schemas import (
 from f2g.api.store import EventStore
 from f2g.experiment import analysis
 from f2g.experiment.assign import DEFAULT_EXPERIMENT, assign
+from f2g.llm.base import ProviderUnavailable
 
 log = logging.getLogger(__name__)
 
@@ -156,6 +157,11 @@ def nudge(user_id: str, req: NudgeRequest | None = None) -> dict[str, Any]:
         result = service.nudge(user_id, req.provider, refresh=req.refresh)
     except KeyError:
         raise HTTPException(404, f"unknown user_id: {user_id}")
+    except ProviderUnavailable as exc:
+        # An explicitly requested provider fails rather than falling back
+        # (runtime.build_provider). 503 with the reason, so a caller who picked
+        # it sees why instead of an opaque 500.
+        raise HTTPException(503, f"provider {req.provider!r} is unavailable: {exc}")
     if not result.get("cached"):
         store.record_generation(str(uuid.uuid4()), result)
     return result
@@ -167,6 +173,8 @@ def chat(req: ChatRequest) -> dict[str, Any]:
         result = service.chat(req.user_id, req.message, req.history, req.provider)
     except KeyError:
         raise HTTPException(404, f"unknown user_id: {req.user_id}")
+    except ProviderUnavailable as exc:
+        raise HTTPException(503, f"provider {req.provider!r} is unavailable: {exc}")
     store.record_generation(str(uuid.uuid4()), result)
     return result
 

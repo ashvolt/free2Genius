@@ -1,3 +1,4 @@
+import { PROVIDERS } from "../lib/providers";
 import type { ReactNode } from "react";
 
 export function Loading({ what }: { what: string }) {
@@ -85,5 +86,36 @@ export function Card({
       </div>
       {children}
     </section>
+  );
+}
+
+/** Picks which provider the *next* generation uses.
+ *
+ * Deliberately inert: changing it fires no request. The caller's own action —
+ * Regenerate, or Send — is what spends the seconds of local inference, so the
+ * choice and the cost stay one click apart.
+ */
+export function ProviderSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <select
+      className="provider-select"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      aria-label="Generation provider for the next run"
+      title="Which provider the next run uses"
+    >
+      {PROVIDERS.map((p) => (
+        <option key={p.id} value={p.id}>{p.label}</option>
+      ))}
+    </select>
   );
 }
